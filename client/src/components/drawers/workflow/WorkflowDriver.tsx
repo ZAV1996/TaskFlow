@@ -1,26 +1,30 @@
 import { Disc, Disc2, PenBox, Plus, Save, X } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerTrigger } from "../../ui/drawer";
-import { addEdge, Background, BackgroundVariant, Controls, MiniMap, ReactFlow, useEdgesState, useNodesState, type Node, type Edge, reconnectEdge, Connection, OnNodesChange, NodeChange, EdgeChange, ReactFlowProvider } from '@xyflow/react';
+import { addEdge, Background, BackgroundVariant, Controls, MiniMap, ReactFlow, useEdgesState, useNodesState, type Node, type Edge, reconnectEdge, Connection, OnNodesChange, NodeChange, EdgeChange, ReactFlowProvider, OnConnect, OnConnectStartParams } from '@xyflow/react';
 
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import React, { useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { StatusNode, StatusNodeProps } from "./ui/StatusNode";
 import StatusEdge from "./ui/StatusEdge";
 import { Separator } from "@/components/ui/separator";
 import AddStatusPopover from "./ui/AddStatusPopover";
 import { useForm } from "react-hook-form";
-import { CreateOrUpdateStatusInput, StatusStyleVariant } from "@/types/graphql";
+import { CreateOrUpdateStatusInput, HandleTypeId, StatusStyleVariant } from "@/types/graphql";
 import { useLocation, useNavigate, useNavigation } from "react-router";
 import { useMutation, useQuery } from "@apollo/client";
-import { GET_ALL_STATUSES_BY_WORKFLOW_ID, GET_ALL_TRANSITIONS_BY_WORKFLOW_ID, UPDATE_STATUS } from "@/services/workflow";
+import { GET_ALL_STATUSES_BY_WORKFLOW_ID, UPDATE_STATUS } from "@/services/workflow";
 import { useStatuses } from "@/components/hooks/workflow/useStatuses";
 import { useTransitions } from "@/components/hooks/workflow/useTransitions";
 import CreateTransitionForm from "@/components/forms/workflow/create-transition-form";
 import AddTransitionPopover from "./ui/AddTransitionPopover";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
-import { Input } from "@/components/ui/Input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
+import { Dialog, DialogContent, DialogTitle, } from "@/components/ui/Dialog";
 
+type Params = {
+    source: string
+    sourceHandle: HandleTypeId
+    target: string
+    targetHandle: HandleTypeId
+}
 interface IWorkflow {
     edges: Edge[]
     nodes: StatusNodeProps[]
@@ -28,6 +32,10 @@ interface IWorkflow {
     setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
     event: string,
     setEvent: React.Dispatch<React.SetStateAction<string>>
+    isOpenTransitionModal: boolean
+    setIsOpenTransitionModal: React.Dispatch<React.SetStateAction<boolean>>
+    params: Connection | null
+    setParams: React.Dispatch<React.SetStateAction<Connection | null>>
 }
 
 export const wfContext = React.createContext<IWorkflow | null>(null)
@@ -42,6 +50,7 @@ export default function WorkflowDriver() {
     const [isOpenTransitionModal, setIsOpenTransitionModal] = useState(false)
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const [params, setParams] = useState<Connection | null>(null)
     const edgeReconnectSuccessful = useRef(true);
     const [mutate] = useMutation(UPDATE_STATUS)
 
@@ -118,13 +127,22 @@ export default function WorkflowDriver() {
         onEdgesChange(e)
     }
 
-    const onConnect = useCallback(
-        (params: any) => {
-            return setEdges((eds) => addEdge({ ...params, type: "edge", data: { label: "Label" } }, eds))
-        },
-        [setEdges]
-    );
+    // const onConnect = useCallback(
+    //     (params: Params) => {
+    //         setParams(params)
+    //         setIsOpenTransitionModal(true);
+    //         return setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot))
+    //     },
+    //     [setEdges]
+    // );
 
+    const onConnect = useCallback(
+        (params: Connection) => {
+            setParams(params);
+            setIsOpenTransitionModal(true);
+        },//setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
+        [],
+    );
     const onReconnect = useCallback((oldEdge: Edge, newConnection: Connection) => {
         edgeReconnectSuccessful.current = true;
         setEdges((els) => reconnectEdge(oldEdge, newConnection, els));
@@ -140,26 +158,11 @@ export default function WorkflowDriver() {
     }, []);
 
 
-
-    function addNewStatus() {
-        setNodes([
-            { id: "asdas", position: { x: 0, y: 0 }, data: { title: 'WF', ID: 1, variant: StatusStyleVariant.Primary }, type: 'status' }, ...nodes,])
-    }
-
-    const addStatusForm = useForm<CreateOrUpdateStatusInput>({
-        defaultValues: {
-            title: "",
-            parent: { ID: undefined },
-            is_finished: false,
-            is_initial: true,
-            on_process: false
-        }
-    })
     const nodeTypes = useMemo(() => ({ status: StatusNode }), []);
     const edgeTypes = useMemo(() => ({ edge: StatusEdge }), []);
     return (
         <wfContext.Provider value={{
-            edges, nodes, setEdges, setNodes, event, setEvent
+            edges, nodes, setEdges, setNodes, event, setEvent, isOpenTransitionModal, setIsOpenTransitionModal, setParams, params
         }}>
             <Drawer direction="right" handleOnly={true} onClose={() => { navigate(-1) }}>
                 <DrawerTrigger asChild>
@@ -207,6 +210,7 @@ export default function WorkflowDriver() {
                                     size={1} />
                             </ReactFlow>
                         </ReactFlowProvider>
+                        <TransitionDialog />
                     </div>
                 </DrawerContent>
             </Drawer>
@@ -215,15 +219,15 @@ export default function WorkflowDriver() {
 }
 
 export function TransitionDialog() {
+    const ctx = useContext(wfContext)
     return (
-        <Popover>
-            <PopoverTrigger >
-            </PopoverTrigger>
-            <PopoverContent>
-                Создание перехода
-                <DialogDescription></DialogDescription>
-                <Input placeholder="Введите название перехода" />
-            </PopoverContent>
-        </Popover>
+        <Dialog open={ctx?.isOpenTransitionModal} onOpenChange={ctx?.setIsOpenTransitionModal}>
+            <DialogContent>
+                <DialogTitle>
+                    Создание перехода
+                </DialogTitle>
+                <CreateTransitionForm />
+            </DialogContent>
+        </Dialog>
     )
 }

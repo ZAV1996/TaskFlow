@@ -8,23 +8,25 @@ import StatusCombobox from "../ui/status-combobox";
 import { Button } from "@/components/ui/Button";
 import { Plus } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useContext, useId } from "react";
+import { useContext } from "react";
 import { wfContext } from "@/components/drawers/workflow/WorkflowDriver";
 import { useMutation } from "@apollo/client";
 import { CREATE_TRANSITION, GET_ALL_TRANSITIONS_BY_WORKFLOW_ID } from "@/services/workflow";
-import { HandleTypeId } from "@/types/graphql";
+import { HandleTypeId, InputId } from "@/types/graphql";
+
 export default function CreateTransitionForm() {
+
     const ID = Number(new URLSearchParams(location.search).get('id'));
-    const [mutate, { data }] = useMutation(CREATE_TRANSITION)
+    const [mutate] = useMutation(CREATE_TRANSITION)
+    const ctx = useContext(wfContext)
     const form = useForm<z.infer<typeof TransitionSchema>>({
         resolver: zodResolver(TransitionSchema),
         defaultValues: {
             title: "",
-            parent: { ID: 1 },
-            to: { ID: 2 }
+            to: { ID: Number(ctx?.params?.target) },
+            parent: { ID: Number(ctx?.params?.source) }
         }
     })
-    const ctx = useContext(wfContext)
     function onSubmit(values: z.infer<typeof TransitionSchema>) {
         if (!ctx?.edges.some((edge) => edge.id === `${values.parent.ID}->${values.to.ID}`)) {
             mutate({
@@ -34,8 +36,8 @@ export default function CreateTransitionForm() {
                         title: values.title,
                         to: { ID: values.to.ID },
                         transition_meta: {
-                            sourceHandle: HandleTypeId.Sr,
-                            targetHandle: HandleTypeId.Tl
+                            sourceHandle: ctx?.params?.sourceHandle as HandleTypeId ?? HandleTypeId.Sr,
+                            targetHandle: ctx?.params?.targetHandle as HandleTypeId ?? HandleTypeId.Tl
                         },
                     }
                 },
@@ -48,16 +50,8 @@ export default function CreateTransitionForm() {
                     }
                 ]
             })
-
-            // ctx?.setEdges([...ctx.edges, {
-            //     id: `${values.parent.ID}->${values.to.ID}`,
-            //     source: `${values.parent.ID}`,
-            //     target: `${values.to?.ID}`,
-            //     data: { label: values.title },
-            //     sourceHandle: "SR",
-            //     targetHandle: "TL",
-            //     type: 'edge' as const,
-            // }])
+            ctx?.setParams(null)
+            ctx?.setIsOpenTransitionModal(false)
         }
     }
     return (
