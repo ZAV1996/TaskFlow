@@ -1,0 +1,49 @@
+# Корневая папка
+/node_modules
+TODOS.txt
+dbTables1.drawio
+
+# Клиентская часть (Vite + React)
+/client/node_modules
+/client/dist
+client/public
+/client/.env.production
+/client/src/components/examples
+client/.env.development
+
+# Серверная часть (NestJS)
+/server/dist
+/server/node_modules
+/server/.env
+/server/uploads
+/server/TODOList.txt
+
+# Логи, кэш, временные файлы
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.env.local
+.env.*.local
+.cache
+.npm
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Редакторы и ОС
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json  # Опционально, если делитесь базовыми настройками
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

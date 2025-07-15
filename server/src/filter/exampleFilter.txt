@@ -1,0 +1,24 @@
+query FilterIssues {
+    filterIssues(
+        filter: {
+            conditions: [{ field: "Author.ID", operator: IN, value: "1, 2, 5" }]
+            logicalOperator: "AND"
+        }
+    ) {
+        Key
+        Title
+        Description
+        Priority
+        Author {
+            ID
+            email
+            name
+            surname
+            patronymic
+            department
+            isActivated
+            register_date
+            updated_date
+        }
+    }
+}
