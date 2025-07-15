@@ -4,20 +4,20 @@ TODOS.txt
 dbTables1.drawio
 
 # Клиентская часть (Vite + React)
-/client/node_modules
-/client/dist
+client/node_modules
+client/dist
 client/public
-/client/.env.production
-/client/src/components/examples
+client/.env.production
+client/src/components/examples
 client/.env.development
 
 # Серверная часть (NestJS)
-/server/dist
-/server/node_modules
-/server/.env
-/server/uploads
-/server/TODOList.txt
-
+server/dist
+server/node_modules
+server/.env
+server/uploads
+server/TODOList.txt
+server/coverage
 # Логи, кэш, временные файлы
 *.log
 *.log.*
