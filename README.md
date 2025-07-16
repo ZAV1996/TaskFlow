@@ -27,7 +27,7 @@ TaskFlow — это современное веб-приложение для у
 - Vite
 
 ### Сервер (NestJS)
-- NestJS + GraphQL (code-first)
+- NestJS + GraphQL (code-first) + Zod
 - TypeORM + PostgreSQL / опционально
 - Redis (cache-manager)
 - bcryptjs (хеширование паролей)
