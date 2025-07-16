@@ -12,7 +12,7 @@ TaskFlow — это современное веб-приложение для у
 - 📨 Уведомления (email, in-app, web-push)
 - 🔐 Авторизация на основе сессий (Redis + Guard + bcrypt)
 - 📊 GraphQL API (code-first, типизированный)
-- 🧠 Кэширование, защита от N+1, DataLoader (в процессе)
+- 🧠 Кэширование, DataLoader (в процессе)
 - 📦 Интеграция с Redis и PostgreSQL
 
 ## 🧱 Технологии
